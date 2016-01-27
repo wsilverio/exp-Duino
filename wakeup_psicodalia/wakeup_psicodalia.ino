@@ -55,7 +55,7 @@ void setup() {
 
   // Serial.begin(57600);
 
-  for (int i = 0; i < NSTRIPS; i++) {
+  for (register uint8_t i = 0; i < NSTRIPS; i++) {
     pinMode(BUTTON[i], INPUT_PULLUP);
   }
 
@@ -113,7 +113,7 @@ void loop() {
 
     float brightness;
     static float lastBrightness = 0;
-    for (int i = 0; i < 5; i++) {
+    for (register uint8_t i = 0; i < 5; i++) {
       brightness += (float)(analogRead(POT_BRIGHTNESS)) / 1023.0f;
     }
     brightness /= 5.0f; // media
@@ -152,14 +152,14 @@ void loop() {
     switch (mode) {
       case MANUAL:
         {
-          for (int i = 0; i < NSTRIPS; i++) {
+          for (register uint8_t i = 0; i < NSTRIPS; i++) {
             if (!digitalRead(BUTTON[i])) {
               strip.setPixelColor(i, LerpColor(color1, color2, float(i) / NSTRIPS));
             } else {
               strip.setPixelColor(i, 0, 0, 0);
             }
           }
-          // SafeStripShow(strip);
+          // SafeStripShow();
           updateStrip = UPDATED;
           lastMode = mode;
         } break;
@@ -170,7 +170,7 @@ void loop() {
           if (lastMode != mode)
             memset(boolStrip, false, NSTRIPS * sizeof(uint8_t));
 
-          for (int i = 0; i < NSTRIPS; i++) {
+          for (register uint8_t i = 0; i < NSTRIPS; i++) {
             if (!digitalRead(BUTTON[i])) {
               boolStrip[i] = !boolStrip[i];
               if (boolStrip[i])
@@ -183,7 +183,7 @@ void loop() {
               strip.setPixelColor(i, LerpColor(color1, color2, float(i) / NSTRIPS));
             }
           }
-          // SafeStripShow(strip);
+          // SafeStripShow();
           // updateStrip = UPDATED;
           lastMode = mode;
         } break;
@@ -198,7 +198,7 @@ void loop() {
             position = 0;
 
           strip.setPixelColor(position, LerpColor(color1, color2, (float)position / NSTRIPS));
-          // SafeStripShow(strip);
+          // SafeStripShow();
           updateStrip = UPDATED;
           lastMode = mode;
         } break;
@@ -218,7 +218,7 @@ void loop() {
             step = 1;
           }
           strip.setPixelColor(position, LerpColor(color1, color2, (float)position / NSTRIPS));
-          // SafeStripShow(strip);
+          // SafeStripShow();
           updateStrip = UPDATED;
           lastMode = mode;
         } break;
@@ -229,7 +229,7 @@ void loop() {
           unsigned int randomIndex = random(NSTRIPS);
           boolStrips[randomIndex] = !boolStrips[randomIndex];
 
-          for (int i = 0; i < NSTRIPS; ++i) {
+          for (register uint8_t i = 0; i < NSTRIPS; ++i) {
             if (boolStrips[i])
               strip.setPixelColor(i, LerpColor(color1, color2, (float)i / NSTRIPS));
             else
@@ -241,7 +241,7 @@ void loop() {
             strip.clear();
             firstCall = false;
           }
-          // SafeStripShow(strip);
+          // SafeStripShow();
           updateStrip = UPDATED;
           lastMode = mode;
         } break;
@@ -260,10 +260,10 @@ void loop() {
             step = 0.01;
           }
 
-          for (int i = 0; i < NSTRIPS; i++) {
+          for (register uint8_t i = 0; i < NSTRIPS; i++) {
             strip.setPixelColor(i, LerpColor(color1, color2, amt));
           }
-          // SafeStripShow(strip);
+          // SafeStripShow();
           updateStrip = UPDATED;
           lastMode = mode;
         } break;
@@ -272,7 +272,7 @@ void loop() {
           static uint8_t lastArray[NSTRIPS] = {9, 0, 1, 2, 3, 4, 5, 6, 7, 8};
           uint8_t thisArray[NSTRIPS];
 
-          for (int i = 0; i < NSTRIPS; i++) {
+          for (register uint8_t i = 0; i < NSTRIPS; i++) {
             if (!i) {
               thisArray[i] = lastArray[NSTRIPS - 1];
             } else {
@@ -283,7 +283,7 @@ void loop() {
           }
 
           memcpy(lastArray, thisArray, NSTRIPS * sizeof(uint8_t));
-          // SafeStripShow(strip);
+          // SafeStripShow();
           updateStrip = UPDATED;
           lastMode = mode;
         } break;
@@ -293,7 +293,7 @@ void loop() {
           static uint8_t lastArray[NSTRIPS] = {9, 0, 1, 2, 3, 4, 5, 6, 7, 8};
           uint8_t thisArray[NSTRIPS];
 
-          for (int i = 0; i < NSTRIPS; i++) {
+          for (register uint8_t i = 0; i < NSTRIPS; i++) {
             if (i == 0 && step > 0) {
               thisArray[i] = lastArray[NSTRIPS - 1];
             } else if (i == NSTRIPS - 1 && step < 0) {
@@ -312,7 +312,7 @@ void loop() {
             step = -step;
 
           memcpy(lastArray, thisArray, NSTRIPS * sizeof(uint8_t));
-          // SafeStripShow(strip);
+          // SafeStripShow();
           updateStrip = UPDATED;
           lastMode = mode;
         } break;
@@ -335,7 +335,7 @@ void loop() {
     }
   }
 
-  SafeStripShow(strip);
+  SafeStripShow();
   updateStrip = NEXTUPDATE;
 
 }
@@ -346,11 +346,12 @@ void DebouncingPin(uint8_t pin, unsigned int ms) {
   delay(ms);
 }
 
-int SafeStripShow(Adafruit_NeoPixel &ledStrip) {
+int SafeStripShow() {
   if (blackout)
     return 1;
 
-  ledStrip.show();
+  // ledStrip.show();
+  strip.show();
   return 0;
 }
 
