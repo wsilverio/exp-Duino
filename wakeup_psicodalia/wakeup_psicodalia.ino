@@ -9,7 +9,7 @@
 #define NEXTUPDATE true
 #define UPDATED false
 
-#define NSTRIPS 10
+#define NSTRIPS 6
 #define NEO_PIN 2
 
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(NSTRIPS, NEO_PIN, NEO_RGB + NEO_KHZ800);
@@ -55,7 +55,7 @@ void setup() {
 
   // Serial.begin(57600);
 
-  for (register uint8_t i = 0; i < NSTRIPS; i++) {
+  for (register uint8_t i = 0; i < 10; i++) {
     pinMode(BUTTON[i], INPUT_PULLUP);
   }
 
@@ -269,7 +269,7 @@ void loop() {
         } break;
       case ROTATE:
         {
-          static uint8_t lastArray[NSTRIPS] = {9, 0, 1, 2, 3, 4, 5, 6, 7, 8};
+          static uint8_t lastArray[NSTRIPS] = {5, 0, 1, 2, 3, 4};
           uint8_t thisArray[NSTRIPS];
 
           for (register uint8_t i = 0; i < NSTRIPS; i++) {
@@ -290,7 +290,7 @@ void loop() {
       case ROTATE_INV:
         {
           static int8_t step = 1;
-          static uint8_t lastArray[NSTRIPS] = {9, 0, 1, 2, 3, 4, 5, 6, 7, 8};
+          static uint8_t lastArray[NSTRIPS] = {5, 0, 1, 2, 3, 4};
           uint8_t thisArray[NSTRIPS];
 
           for (register uint8_t i = 0; i < NSTRIPS; i++) {
@@ -308,7 +308,7 @@ void loop() {
               strip.setPixelColor(i, LerpColor(color2, color1, (float)thisArray[i] / NSTRIPS));
           }
 
-          if ((step > 0 && thisArray[NSTRIPS - 1] == 9) || (step < 0 && thisArray[0] == 0))
+          if ((step > 0 && thisArray[NSTRIPS - 1] == 5) || (step < 0 && thisArray[0] == 0))
             step = -step;
 
           memcpy(lastArray, thisArray, NSTRIPS * sizeof(uint8_t));
