@@ -8,10 +8,10 @@
 
 #define NEXTUPDATE true
 #define UPDATED false
-
-#define NSTRIPS 6
 #define NEO_PIN 2
 
+// define o numero de fitas
+const uint8_t NSTRIPS = 5;
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(NSTRIPS, NEO_PIN, NEO_RGB + NEO_KHZ800);
 
 enum {
@@ -55,7 +55,7 @@ void setup() {
 
   // Serial.begin(57600);
 
-  for (register uint8_t i = 0; i < 10; i++) {
+  for (uint8_t i = 0; i < 10; i++) {
     pinMode(BUTTON[i], INPUT_PULLUP);
   }
 
@@ -113,7 +113,7 @@ void loop() {
 
     float brightness;
     static float lastBrightness = 0;
-    for (register uint8_t i = 0; i < 5; i++) {
+    for (uint8_t i = 0; i < 5; i++) {
       brightness += (float)(analogRead(POT_BRIGHTNESS)) / 1023.0f;
     }
     brightness /= 5.0f; // media
@@ -152,7 +152,7 @@ void loop() {
     switch (mode) {
       case MANUAL:
         {
-          for (register uint8_t i = 0; i < NSTRIPS; i++) {
+          for (uint8_t i = 0; i < NSTRIPS; i++) {
             if (!digitalRead(BUTTON[i])) {
               strip.setPixelColor(i, LerpColor(color1, color2, float(i) / NSTRIPS));
             } else {
@@ -170,7 +170,7 @@ void loop() {
           if (lastMode != mode)
             memset(boolStrip, false, NSTRIPS * sizeof(uint8_t));
 
-          for (register uint8_t i = 0; i < NSTRIPS; i++) {
+          for (uint8_t i = 0; i < NSTRIPS; i++) {
             if (!digitalRead(BUTTON[i])) {
               boolStrip[i] = !boolStrip[i];
               if (boolStrip[i])
@@ -229,7 +229,7 @@ void loop() {
           unsigned int randomIndex = random(NSTRIPS);
           boolStrips[randomIndex] = !boolStrips[randomIndex];
 
-          for (register uint8_t i = 0; i < NSTRIPS; ++i) {
+          for (uint8_t i = 0; i < NSTRIPS; ++i) {
             if (boolStrips[i])
               strip.setPixelColor(i, LerpColor(color1, color2, (float)i / NSTRIPS));
             else
@@ -260,7 +260,7 @@ void loop() {
             step = 0.01;
           }
 
-          for (register uint8_t i = 0; i < NSTRIPS; i++) {
+          for (uint8_t i = 0; i < NSTRIPS; i++) {
             strip.setPixelColor(i, LerpColor(color1, color2, amt));
           }
           // SafeStripShow();
@@ -269,10 +269,20 @@ void loop() {
         } break;
       case ROTATE:
         {
-          static uint8_t lastArray[NSTRIPS] = {5, 0, 1, 2, 3, 4};
+          static uint8_t lastArray[NSTRIPS];
           uint8_t thisArray[NSTRIPS];
 
-          for (register uint8_t i = 0; i < NSTRIPS; i++) {
+          static boolean firstCall = true;
+
+          if (firstCall) {
+            lastArray[0] = NSTRIPS - 1;
+            for (uint8_t i = 1; i < NSTRIPS; ++i) {
+              lastArray[i] = i - 1;
+            }
+            firstCall = false;
+          }
+
+          for (uint8_t i = 0; i < NSTRIPS; i++) {
             if (!i) {
               thisArray[i] = lastArray[NSTRIPS - 1];
             } else {
@@ -290,10 +300,21 @@ void loop() {
       case ROTATE_INV:
         {
           static int8_t step = 1;
-          static uint8_t lastArray[NSTRIPS] = {5, 0, 1, 2, 3, 4};
+          static uint8_t lastArray[NSTRIPS];
           uint8_t thisArray[NSTRIPS];
 
-          for (register uint8_t i = 0; i < NSTRIPS; i++) {
+          static boolean firstCall = true;
+
+          if (firstCall) {
+            lastArray[0] = NSTRIPS - 1;
+            for (uint8_t i = 1; i < NSTRIPS; ++i) {
+              lastArray[i] = i - 1;
+            }
+            firstCall = false;
+          }
+
+
+          for (uint8_t i = 0; i < NSTRIPS; i++) {
             if (i == 0 && step > 0) {
               thisArray[i] = lastArray[NSTRIPS - 1];
             } else if (i == NSTRIPS - 1 && step < 0) {
