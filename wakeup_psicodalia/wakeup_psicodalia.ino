@@ -111,7 +111,7 @@ void loop() {
 
   if (updateStrip == NEXTUPDATE) {
 
-    float brightness;
+    float brightness = 0;
     static float lastBrightness = 0;
     for (uint8_t i = 0; i < 5; i++) {
       brightness += (float)(analogRead(POT_BRIGHTNESS)) / 1023.0f;

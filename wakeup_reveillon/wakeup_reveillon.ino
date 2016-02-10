@@ -125,7 +125,7 @@ void loop() {
     }
 
     
-    float brightness;
+    float brightness = 0;
     static float lastBrightness = 0;
     for(int i = 0; i < 5; i++){
         brightness += (float)(analogRead(POT_BRIGHTNESS))/1023.0f;
