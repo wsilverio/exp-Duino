@@ -3,163 +3,128 @@
 #include <avr/power.h>
 #endif
 
+// constantes da media exponencial movel
+#define NM 20.0         // numero de medias
+#define ALPHA NM/(NM+1) // coeficiente exponencial
+// constantes do debounce
 #define DEBOUNCING_MS 5
 #define TEMPO_MAX 3000 // 3s
-
+// constantes de ativacao dos LEDs
 #define NEXTUPDATE true
 #define UPDATED false
 #define NEO_PIN 2
 
-// define o numero de fitas
+// numero de fitas
 const uint8_t NSTRIPS = 5;
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(NSTRIPS, NEO_PIN, NEO_RGB + NEO_KHZ800);
 
-enum {
-  BT0 = 53,
-  BT1 = 51,
-  BT2 = 49,
-  BT3 = 47,
-  BT4 = 45,
-  BT5 = 43,
-  BT6 = 41,
-  BT7 = 39,
-  BT8 = 37,
-  BT9 = 35,
-  BTM = 33,
-  BTB = 31
-} BUTTONS;
+// enumeracao para acesso ao vetor dos botoes
+enum BUTTONS {BT_0 = 0, BT_1, BT_2, BT_3, BT_4, BT_5, BT_6, BT_7, BT_8, BT_9, BT_MODE, BT_BLACKOUT, NUM_BUTTONS};
+uint8_t BUTTON_PIN[NUM_BUTTONS];
 
-// BOTOES
-const uint8_t BUTTON[] = { BT0, BT1, BT2, BT3, BT4, BT5, BT6, BT7, BT8, BT9 };
-const uint8_t BUTTON_MODE = BTM;
-const uint8_t BUTTON_BLACKOUT = BTB;
+// enumeracao para acesso ao vetor dos potenciometros
+enum POTS {POT_R1 = 0, POT_G1, POT_B1, POT_R2, POT_G2, POT_B2, POT_BRIGHTNESS, POT_TEMPO, NUM_POTS};
+uint8_t POT_PIN[NUM_POTS];
 
-// POT
-const uint8_t POT_R1 = A15;
-const uint8_t POT_G1 = A14;
-const uint8_t POT_B1 = A13;
-const uint8_t POT_R2 = A8;
-const uint8_t POT_G2 = A9;
-const uint8_t POT_B2 = A10;
-const uint8_t POT_BRIGHTNESS = A12;
-const uint8_t POT_TEMPO = A11;
-
+// media exponencial
+float valPot[NUM_POTS][2] = {0};
+// cores para LerpColor
 uint32_t color1, color2;
+// tempos de atualizacao
 unsigned long timeNow, timeLastCheck = 0;
+// blackout
 bool blackout = false;
-volatile bool blackoutIntCalled = false;
 
 void setup() {
+  // inicializa a fita
   strip.begin();
   strip.show();
 
-  // Serial.begin(57600);
+  // pinos dos botoes
+  BUTTON_PIN[BT_0] = 53;
+  BUTTON_PIN[BT_1] = 51;
+  BUTTON_PIN[BT_2] = 49;
+  BUTTON_PIN[BT_3] = 47;
+  BUTTON_PIN[BT_4] = 45;
+  BUTTON_PIN[BT_5] = 43;
+  BUTTON_PIN[BT_6] = 41;
+  BUTTON_PIN[BT_7] = 39;
+  BUTTON_PIN[BT_8] = 37;
+  BUTTON_PIN[BT_9] = 35;
+  BUTTON_PIN[BT_MODE] = 33;
+  BUTTON_PIN[BT_BLACKOUT] = 31;
+  // pinos dos potenciometros
+  POT_PIN[POT_R1] = A15;
+  POT_PIN[POT_G1] = A14;
+  POT_PIN[POT_B1] = A13;
+  POT_PIN[POT_R2] = A8;
+  POT_PIN[POT_G2] = A9;
+  POT_PIN[POT_B2] = A10;
+  POT_PIN[POT_BRIGHTNESS] = A12;
+  POT_PIN[POT_TEMPO] = A11;
 
-  for (uint8_t i = 0; i < 10; i++) {
-    pinMode(BUTTON[i], INPUT_PULLUP);
+  for (uint8_t i = BT_0; i < NUM_BUTTONS; i++) {
+    pinMode(BUTTON_PIN[i], INPUT_PULLUP);
   }
-
-  pinMode(BUTTON_MODE, INPUT_PULLUP);
-  pinMode(BUTTON_BLACKOUT, INPUT_PULLUP);
-
-  // color1 = strip.Color(255, 255, 255);
-  // color2 = strip.Color(255, 255, 255);
-
-  // attachInterrupt(digitalPinToInterrupt(BUTTON_BLACKOUT), blackoutInt, FALLING);
-
 }
 
 void loop() {
-  if (!digitalRead(BUTTON_BLACKOUT)) {
-    // noInterrupts();
+  if (!digitalRead(BUTTON_PIN[BT_BLACKOUT])) {
     blackout = true;
-    // if(blackout){
     strip.clear();
     strip.show();
-
-    // Serial.println(F("backout!!!"));
-    // }
-
-    // DebouncingPin(BUTTON_BLACKOUT, DEBOUNCING_MS);
-    // blackoutIntCalled = false;
-    // interrupts();
   } else {
     blackout = false;
   }
 
-  enum {
+  enum MODES {
     MENU_MIN,
     MANUAL, MANUAL_TOGGLE, SEQUENTIAL, SEQUENTIAL_INV, ROTATE, ROTATE_INV, SMOOTH, RANDOM,
     MENU_MAX
-  } MODES;
+  };
 
   static uint8_t mode = MENU_MIN + 1;
-  static uint8_t lastMode = mode;
 
-  if (!digitalRead(BUTTON_MODE)) {
+  if (!digitalRead(BUTTON_PIN[BT_MODE])) {
+
     mode++;
-    if (mode >= MENU_MAX)
+
+    if (mode >= MENU_MAX) {
       mode = MENU_MIN + 1;
+    }
 
-    // Serial.print(F("mode: "));
-    // Serial.println(mode);
-
-    DebouncingPin(BUTTON_MODE, DEBOUNCING_MS);
+    DebouncingPin(BUTTON_PIN[BT_MODE], DEBOUNCING_MS);
   }
 
   static boolean updateStrip = NEXTUPDATE;
 
   if (updateStrip == NEXTUPDATE) {
 
-    float brightness = 0;
-    static float lastBrightness = 0;
-    for (uint8_t i = 0; i < 5; i++) {
-      brightness += (float)(analogRead(POT_BRIGHTNESS)) / 1023.0f;
-    }
-    brightness /= 5.0f; // media
+    static uint8_t lastMode = MENU_MIN+1;
 
-    if (abs(brightness - lastBrightness) > 0.03) { // 3%
-      lastBrightness = brightness;
-    }
-
-    // Serial.print(F("brightness*: "));
-    // Serial.println(lastBrightness);
+    // media exp movel
+    float brightness = (readAnalogAndSetExpMed(POT_BRIGHTNESS) >> 10);
 
     color1 = strip.Color(
-               lastBrightness * analogRead(POT_R1) / 4,
-               lastBrightness * analogRead(POT_G1) / 4,
-               lastBrightness * analogRead(POT_B1) / 4);
+               brightness * (readAnalogAndSetExpMed(POT_R1) >> 2),
+               brightness * (readAnalogAndSetExpMed(POT_G1) >> 2),
+               brightness * (readAnalogAndSetExpMed(POT_B1) >> 2));
 
     color2 = strip.Color(
-               brightness * analogRead(POT_R2) / 4,
-               brightness * analogRead(POT_G2) / 4,
-               brightness * analogRead(POT_B2) / 4);
-
-    // Serial.print(F("R1: "));
-    // Serial.println(analogRead(POT_R1)/4);
-    // Serial.print(F("G1: "));
-    // Serial.println(analogRead(POT_G1)/4);
-    // Serial.print(F("B1: "));
-    // Serial.println(analogRead(POT_B1)/4);
-    // Serial.print(F("R2: "));
-    // Serial.println(analogRead(POT_R2)/4);
-    // Serial.print(F("G2: "));
-    // Serial.println(analogRead(POT_G2)/4);
-    // Serial.print(F("B2: "));
-    // Serial.println(analogRead(POT_B2)/4);
-    // Serial.println();
+               brightness * (readAnalogAndSetExpMed(POT_R2) >> 2),
+               brightness * (readAnalogAndSetExpMed(POT_G2) >> 2),
+               brightness * (readAnalogAndSetExpMed(POT_B2) >> 2));
 
     switch (mode) {
       case MANUAL:
         {
-          for (uint8_t i = 0; i < NSTRIPS; i++) {
-            if (!digitalRead(BUTTON[i])) {
+          for (uint8_t i = BT_0; i < NSTRIPS; i++) {
+            if (!digitalRead(BUTTON_PIN[i])) {
               strip.setPixelColor(i, LerpColor(color1, color2, float(i) / NSTRIPS));
             } else {
               strip.setPixelColor(i, 0, 0, 0);
             }
           }
-          // SafeStripShow();
           updateStrip = UPDATED;
           lastMode = mode;
         } break;
@@ -170,21 +135,19 @@ void loop() {
           if (lastMode != mode)
             memset(boolStrip, false, NSTRIPS * sizeof(uint8_t));
 
-          for (uint8_t i = 0; i < NSTRIPS; i++) {
-            if (!digitalRead(BUTTON[i])) {
+          for (uint8_t i = BT_0; i < NSTRIPS; i++) {
+            if (!digitalRead(BUTTON_PIN[i])) {
               boolStrip[i] = !boolStrip[i];
               if (boolStrip[i])
                 strip.setPixelColor(i, LerpColor(color1, color2, float(i) / NSTRIPS));
               else
                 strip.setPixelColor(i, 0, 0, 0);
 
-              DebouncingPin(BUTTON[i], DEBOUNCING_MS);
+              DebouncingPin(BUTTON_PIN[i], DEBOUNCING_MS);
             } else if (boolStrip[i]) {
               strip.setPixelColor(i, LerpColor(color1, color2, float(i) / NSTRIPS));
             }
           }
-          // SafeStripShow();
-          // updateStrip = UPDATED;
           lastMode = mode;
         } break;
       case SEQUENTIAL:
@@ -198,7 +161,6 @@ void loop() {
             position = 0;
 
           strip.setPixelColor(position, LerpColor(color1, color2, (float)position / NSTRIPS));
-          // SafeStripShow();
           updateStrip = UPDATED;
           lastMode = mode;
         } break;
@@ -218,7 +180,6 @@ void loop() {
             step = 1;
           }
           strip.setPixelColor(position, LerpColor(color1, color2, (float)position / NSTRIPS));
-          // SafeStripShow();
           updateStrip = UPDATED;
           lastMode = mode;
         } break;
@@ -241,7 +202,6 @@ void loop() {
             strip.clear();
             firstCall = false;
           }
-          // SafeStripShow();
           updateStrip = UPDATED;
           lastMode = mode;
         } break;
@@ -263,7 +223,6 @@ void loop() {
           for (uint8_t i = 0; i < NSTRIPS; i++) {
             strip.setPixelColor(i, LerpColor(color1, color2, amt));
           }
-          // SafeStripShow();
           updateStrip = UPDATED;
           lastMode = mode;
         } break;
@@ -293,7 +252,6 @@ void loop() {
           }
 
           memcpy(lastArray, thisArray, NSTRIPS * sizeof(uint8_t));
-          // SafeStripShow();
           updateStrip = UPDATED;
           lastMode = mode;
         } break;
@@ -333,7 +291,6 @@ void loop() {
             step = -step;
 
           memcpy(lastArray, thisArray, NSTRIPS * sizeof(uint8_t));
-          // SafeStripShow();
           updateStrip = UPDATED;
           lastMode = mode;
         } break;
@@ -342,11 +299,8 @@ void loop() {
     }
   }
 
-  unsigned int tempo = map(analogRead(POT_TEMPO), 0, 1023, 0, TEMPO_MAX);
+  unsigned int tempo = map(readAnalogAndSetExpMed(POT_TEMPO), 0, 1023, 0, TEMPO_MAX);
   timeNow = millis();
-
-  // Serial.print(F("tempo: "));
-  // Serial.println(tempo);
 
   if (mode != MANUAL && mode != MANUAL_TOGGLE) {
     if ((timeNow - timeLastCheck) >= tempo) {
@@ -361,7 +315,14 @@ void loop() {
 
 }
 
-void DebouncingPin(uint8_t pin, unsigned int ms) {
+// media exponencial movel
+uint16_t readAnalogAndSetExpMed(const uint8_t POT) {
+  valPot[POT][1] = ALPHA*valPot[POT][0] + (1-ALPHA)*analogRead(POT_PIN[POT]);
+  valPot[POT][0] = valPot[POT][1];
+  return valPot[POT][1];
+}
+
+inline void DebouncingPin(uint8_t pin, unsigned int ms) {
   delay(ms);
   while (!digitalRead(pin));
   delay(ms);
@@ -371,7 +332,6 @@ int SafeStripShow() {
   if (blackout)
     return 1;
 
-  // ledStrip.show();
   strip.show();
   return 0;
 }
@@ -391,10 +351,6 @@ uint32_t LerpColor(const uint32_t& from, const uint32_t& to, float amount) {
 
   return ((round(a1 + (a2 - a1) * amount) << 24) |
           (round(r1 + (r2 - r1) * amount) << 16) |
-          (round(g1 + (g2 - g1) * amount) << 8) |
+          (round(g1 + (g2 - g1) * amount) << 8)  |
           (round(b1 + (b2 - b1) * amount)));
 }
-
-//void blackoutInt(){
-//    blackoutIntCalled = true;
-//}
