@@ -288,7 +288,7 @@ void loop() {
               strip.setPixelColor(i, LerpColor(color2, color1, (float)thisArray[i] / NSTRIPS));
           }
 
-          if ((step > 0 && thisArray[NSTRIPS - 1] == 5) || (step < 0 && thisArray[0] == 0))
+          if ((step > 0 && thisArray[NSTRIPS - 1] == (NSTRIPS-1)) || (step < 0 && thisArray[0] == 0))
             step = -step;
 
           memcpy(lastArray, thisArray, NSTRIPS * sizeof(uint8_t));
@@ -300,7 +300,7 @@ void loop() {
     }
   }
 
-  unsigned int tempo = map(readAnalogAndSetExpMed(POT_TEMPO), 0, 1023, 0, TEMPO_MAX);
+  unsigned int tempo = map(readAnalogAndSetExpMed(POT_TEMPO), 0, 1023.0f, 0, TEMPO_MAX);
   timeNow = millis();
 
   if (mode != MANUAL && mode != MANUAL_TOGGLE) {
