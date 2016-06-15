@@ -104,7 +104,8 @@ void loop() {
     static uint8_t lastMode = MENU_MIN+1;
 
     // media exp movel
-    float brightness = (readAnalogAndSetExpMed(POT_BRIGHTNESS) / 1023.0f);
+    // float brightness = (readAnalogAndSetExpMed(POT_BRIGHTNESS) / 1023.0f);
+    float brightness = (analogRead(POT_PIN[POT_BRIGHTNESS]) / 1023.0f);
 
     color1 = strip.Color(
                brightness * (readAnalogAndSetExpMed(POT_R1) >> 2),
