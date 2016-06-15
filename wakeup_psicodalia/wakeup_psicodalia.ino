@@ -15,7 +15,7 @@
 #define NEO_PIN 2
 
 // numero de fitas
-const uint8_t NSTRIPS = 5;
+const uint8_t NSTRIPS = 10;
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(NSTRIPS, NEO_PIN, NEO_RGB + NEO_KHZ800);
 
 // enumeracao para acesso ao vetor dos botoes
@@ -36,6 +36,7 @@ unsigned long timeNow, timeLastCheck = 0;
 bool blackout = false;
 
 void setup() {
+  // Serial.begin(57600);  
   // inicializa a fita
   strip.begin();
   strip.show();
@@ -103,7 +104,7 @@ void loop() {
     static uint8_t lastMode = MENU_MIN+1;
 
     // media exp movel
-    float brightness = (readAnalogAndSetExpMed(POT_BRIGHTNESS) >> 10);
+    float brightness = (readAnalogAndSetExpMed(POT_BRIGHTNESS) / 1023.0f);
 
     color1 = strip.Color(
                brightness * (readAnalogAndSetExpMed(POT_R1) >> 2),
