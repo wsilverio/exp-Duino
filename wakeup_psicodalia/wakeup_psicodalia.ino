@@ -42,11 +42,11 @@ void setup() {
   strip.show();
 
   // pinos dos botoes
-  BUTTON_PIN[BT_0] = 53;
-  BUTTON_PIN[BT_1] = 51;
+  BUTTON_PIN[BT_0] = 45;
+  BUTTON_PIN[BT_1] = 47;
   BUTTON_PIN[BT_2] = 49;
-  BUTTON_PIN[BT_3] = 47;
-  BUTTON_PIN[BT_4] = 45;
+  BUTTON_PIN[BT_3] = 51;
+  BUTTON_PIN[BT_4] = 53;
   BUTTON_PIN[BT_5] = 43;
   BUTTON_PIN[BT_6] = 41;
   BUTTON_PIN[BT_7] = 39;
@@ -55,12 +55,12 @@ void setup() {
   BUTTON_PIN[BT_MODE] = 33;
   BUTTON_PIN[BT_BLACKOUT] = 31;
   // pinos dos potenciometros
-  POT_PIN[POT_R1] = A15;
-  POT_PIN[POT_G1] = A14;
-  POT_PIN[POT_B1] = A13;
-  POT_PIN[POT_R2] = A8;
-  POT_PIN[POT_G2] = A9;
-  POT_PIN[POT_B2] = A10;
+  POT_PIN[POT_R1] = A8;
+  POT_PIN[POT_G1] = A9;
+  POT_PIN[POT_B1] = A10;
+  POT_PIN[POT_R2] = A15;
+  POT_PIN[POT_G2] = A14;
+  POT_PIN[POT_B2] = A13;
   POT_PIN[POT_BRIGHTNESS] = A12;
   POT_PIN[POT_TEMPO] = A11;
 
@@ -104,18 +104,17 @@ void loop() {
     static uint8_t lastMode = MENU_MIN+1;
 
     // media exp movel
-    // float brightness = (readAnalogAndSetExpMed(POT_BRIGHTNESS) / 1023.0f);
     float brightness = (analogRead(POT_PIN[POT_BRIGHTNESS]) / 1023.0f);
 
     color1 = strip.Color(
-               brightness * (readAnalogAndSetExpMed(POT_R1) >> 2),
-               brightness * (readAnalogAndSetExpMed(POT_G1) >> 2),
-               brightness * (readAnalogAndSetExpMed(POT_B1) >> 2));
+               brightness * (analogRead(POT_PIN[POT_R1]) >> 2),
+               brightness * (analogRead(POT_PIN[POT_G1]) >> 2),
+               brightness * (analogRead(POT_PIN[POT_B1]) >> 2));
 
     color2 = strip.Color(
-               brightness * (readAnalogAndSetExpMed(POT_R2) >> 2),
-               brightness * (readAnalogAndSetExpMed(POT_G2) >> 2),
-               brightness * (readAnalogAndSetExpMed(POT_B2) >> 2));
+               brightness * (analogRead(POT_PIN[POT_R2]) >> 2),
+               brightness * (analogRead(POT_PIN[POT_G2]) >> 2),
+               brightness * (analogRead(POT_PIN[POT_B2]) >> 2));
 
     switch (mode) {
       case MANUAL:
@@ -277,7 +276,7 @@ void loop() {
           for (uint8_t i = 0; i < NSTRIPS; i++) {
             if (i == 0 && step > 0) {
               thisArray[i] = lastArray[NSTRIPS - 1];
-            } else if (i == NSTRIPS - 1 && step < 0) {
+            } else if (i == (NSTRIPS - 1) && step < 0) {
               thisArray[i] = lastArray[0];
             } else {
               thisArray[i] = lastArray[i - step];
@@ -289,7 +288,7 @@ void loop() {
               strip.setPixelColor(i, LerpColor(color2, color1, (float)thisArray[i] / NSTRIPS));
           }
 
-          if ((step > 0 && thisArray[NSTRIPS - 1] == (NSTRIPS-1)) || (step < 0 && thisArray[0] == 0))
+          if ((step > 0 && thisArray[NSTRIPS - 1] == (NSTRIPS)) || (step < 0 && thisArray[0] == 0))
             step = -step;
 
           memcpy(lastArray, thisArray, NSTRIPS * sizeof(uint8_t));
